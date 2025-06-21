@@ -7,7 +7,9 @@ import os
 import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
+from pathlib import Path
 
 # 添加项目根目录到Python路径
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,19 +19,17 @@ try:
     from src.utils.utils import get_config
 except ImportError:
     from utils.utils import get_config
-# 导入路由
-try:
-    from src.api.routes import router
-except ImportError:
-    from api.routes import router
-
 
 # 获取配置
 config = get_config()
 API_CONFIG = config.get("api", {})
 SYSTEM_CONFIG = config.get("system", {})
 
-
+# 导入路由
+try:
+    from src.api.routes import router
+except ImportError:
+    from api.routes import router
 
 # 创建FastAPI应用
 app = FastAPI(
@@ -40,10 +40,10 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# 配置CORS
+# 配置CORS - 允许React前端访问
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境中应该限制具体域名
+    allow_origins=["http://localhost:3000"],  # React默认端口
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -51,6 +51,11 @@ app.add_middleware(
 
 # 注册路由
 app.include_router(router, prefix="/api/v1")
+
+# 配置静态文件 - 用于生产环境部署React构建文件
+frontend_build_dir = Path(__file__).parent.parent.parent / "frontend" / "build"
+if frontend_build_dir.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_build_dir), html=True), name="frontend")
 
 # 配置日志
 if SYSTEM_CONFIG.get("enable_logging", True):
@@ -64,23 +69,13 @@ async def startup_event():
     """应用启动事件"""
     logger.info("隐私政策智能生成系统启动中...")
     logger.info(f"API文档地址: http://localhost:{API_CONFIG['port']}/docs")
+    logger.info(f"前端地址: http://localhost:3000")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """应用关闭事件"""
     logger.info("隐私政策智能生成系统正在关闭...")
-
-
-@app.get("/")
-async def root():
-    """根路径"""
-    return {
-        "message": "隐私政策智能生成系统",
-        "version": "1.0.0",
-        "docs": "/docs",
-        "api": "/api/v1"
-    }
 
 
 if __name__ == "__main__":
