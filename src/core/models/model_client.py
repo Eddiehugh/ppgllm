@@ -7,12 +7,11 @@ from autogen_core.models import ModelFamily
 try:
     from src.utils.utils import get_config
 except ImportError:
-    from ...utils.utils import get_config
+    from ppgllm.src.utils import get_config
 
 
 class ModelClientFactory:
     """模型客户端工厂"""
-    
     @staticmethod
     def create_client(model_name: str):
         """
@@ -25,37 +24,20 @@ class ModelClientFactory:
             模型客户端实例
         """
         model_config = get_config()['qwen_client']
-        
-        if "gpt" in model_name:
-            return OpenAIChatCompletionClient(
-                model=model_name,
-                temperature=0.01,
-                model_info={
-                    "vision": False,
-                    "function_calling": True,
-                    "json_output": False,
-                    "family": ModelFamily.UNKNOWN
-                },
-                **model_config,
-            )
-        elif "claude" in model_name:
-            return OpenAIChatCompletionClient(
-                model=model_name,
-                max_tokens=2000,
-                timeout=2000,
-                model_info={
-                    "vision": False,
-                    "function_calling": True,
-                    "json_output": False,
-                    "family": ModelFamily.UNKNOWN
-                },
-                **model_config
-            )
-        elif "qwen" in model_name or "deepseek" in model_name:
+        max_tokens = model_config.get('max_tokens', 16000)
+
+        if "model" in model_config:
+            del model_config["model"]
+        if "max_tokens" in model_config:
+            del model_config["max_tokens"]
+
+
+
+        if "qwen" in model_name or "deepseek" in model_name:
             # 针对Qwen和DeepSeek模型的配置
             return OpenAIChatCompletionClient(
                 model=model_name,
-                max_tokens=16000,
+                max_tokens=max_tokens,
                 temperature=0.1,
                 model_info={
                     "vision": False,
@@ -70,7 +52,7 @@ class ModelClientFactory:
             # 默认配置
             return OpenAIChatCompletionClient(
                 model=model_name,
-                max_tokens=16000,
+                max_tokens=max_tokens,
                 temperature=0.1,
                 model_info={
                     "vision": False,

@@ -11,11 +11,11 @@ except ImportError:
 try:
     from src.utils.utils import get_memory_dir
 except ImportError:
-    from ..utils.utils import get_memory_dir
+    from ppgllm.src.utils import get_memory_dir
 try:
-    from prompt.agent import READABILITY_CHECKER_PROMPT, READABILITY_CHECKER_DESCRIPTION
+    from prompt.readability_checker_prompt import DESCRIPTION, SYSTEM_PROMPT
 except ImportError:
-    from ...prompt.agent import READABILITY_CHECKER_PROMPT, READABILITY_CHECKER_DESCRIPTION
+    from ...prompt.readability_checker_prompt import DESCRIPTION, SYSTEM_PROMPT
 
 
 class ReadabilityCheckerBuilder:
@@ -34,12 +34,11 @@ class ReadabilityCheckerBuilder:
             memories.append(await manager.get_memory())
             
         return AssistantAgent(
-            name="readability_checker",
+            name="移动应用隐私政策内容可读性检测agent",
             model_client=self.model_client,
-            description=READABILITY_CHECKER_DESCRIPTION,
-            system_message=READABILITY_CHECKER_PROMPT,
+            description=DESCRIPTION,
+            system_message=SYSTEM_PROMPT,
             tools=self.tools,
             memory=memories,
-            handoffs=["privacy_policy_generator", "compliance_checker"],
             model_client_stream=True
         )

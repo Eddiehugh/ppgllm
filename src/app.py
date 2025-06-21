@@ -4,12 +4,32 @@ FastAPI主应用
 """
 
 import os
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-from config.agent_config import API_CONFIG, SYSTEM_CONFIG
-from src.api.routes import router
+# 添加项目根目录到Python路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# 导入配置获取函数
+try:
+    from src.utils.utils import get_config
+except ImportError:
+    from utils.utils import get_config
+# 导入路由
+try:
+    from src.api.routes import router
+except ImportError:
+    from api.routes import router
+
+
+# 获取配置
+config = get_config()
+API_CONFIG = config.get("api", {})
+SYSTEM_CONFIG = config.get("system", {})
+
+
 
 # 创建FastAPI应用
 app = FastAPI(
